@@ -142,6 +142,7 @@ UPROGS=\
 	$U/_zombie\
 	$U/_testuptime\
 	$U/_testrandom\
+	$U/_testlottery\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
