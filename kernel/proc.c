@@ -277,7 +277,7 @@ growproc(int n)
 // Create a new process, copying the parent.
 // Sets up child kernel stack to return as if from fork() system call.
 int
-fork(void)
+fork(int bilhete)
 {
   int i, pid;
   struct proc *np;
@@ -287,6 +287,9 @@ fork(void)
   if((np = allocproc()) == 0){
     return -1;
   }
+
+  np->bilhete = bilhete;
+  
 
   // Copy user memory from parent to child.
   if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
@@ -472,7 +475,7 @@ scheduler(void)
     int found = 0;
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
-      if(p->state == RUNNABLE && p->bilhetes == bilhetes) {
+      if(p->state == RUNNABLE && p->bilhete == bilhetes) {
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
         // before jumping back to us.

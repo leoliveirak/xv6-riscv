@@ -6,6 +6,16 @@
 #include "spinlock.h"
 #include "proc.h"
 
+
+int cria_bilhete(){
+  int b = 0;
+  uint64 rand = random();
+  rand = rand % 4;
+  int array[4] = {6, 3, 2, 1};
+  b = array[rand];
+  return b;
+}
+
 uint64
 sys_exit(void)
 {
@@ -24,7 +34,9 @@ sys_getpid(void)
 uint64
 sys_fork(void)
 {
-  return fork();
+  int bilhete = cria_bilhete();
+  argint(0, &bilhete);
+  return fork(bilhete);
 }
 
 uint64
