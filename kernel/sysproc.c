@@ -22,6 +22,14 @@ sys_getpid(void)
 }
 
 uint64
+sys_fork_com_bilhete(void)
+{
+  int bilhete;
+  argint(0, &bilhete);
+  return fork_com_bilhete(bilhete);
+}
+
+uint64
 sys_fork(void)
 {
   return fork();

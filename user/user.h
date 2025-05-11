@@ -23,6 +23,8 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 uint64 random(void);
+int fork_com_bilhete(int bilhete);
+
 
 // ulib.c
 int stat(const char*, struct stat*);

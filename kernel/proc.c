@@ -277,6 +277,59 @@ growproc(int n)
 // Create a new process, copying the parent.
 // Sets up child kernel stack to return as if from fork() system call.
 int
+fork_com_bilhete(int bilhete)
+{
+  int i, pid;
+  struct proc *np;
+  struct proc *p = myproc();
+
+  // Aloca processo.
+  if((np = allocproc()) == 0){
+    return -1;
+  }
+
+  // Copia memória do usuário do pai para o filho.
+  if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
+    freeproc(np);
+    release(&np->lock);
+    return -1;
+  }
+  np->sz = p->sz;
+
+  // Copia registradores salvos do usuário.
+  *(np->trapframe) = *(p->trapframe);
+
+  // Faz fork retornar 0 no processo filho.
+  np->trapframe->a0 = 0;
+
+  // Duplica descritores de arquivo abertos.
+  for(i = 0; i < NOFILE; i++)
+    if(p->ofile[i])
+      np->ofile[i] = filedup(p->ofile[i]);
+  np->cwd = idup(p->cwd);
+
+  safestrcpy(np->name, p->name, sizeof(p->name));
+
+  pid = np->pid;
+
+  // Define o bilhete do processo filho.
+  np->bilhete = bilhete;
+  printf("fork_com_bilhete: processo filho PID %d recebeu bilhete %d\n", pid, bilhete);
+
+  release(&np->lock);
+
+  acquire(&wait_lock);
+  np->parent = p;
+  release(&wait_lock);
+
+  acquire(&np->lock);
+  np->state = RUNNABLE;
+  release(&np->lock);
+
+  return pid;
+}
+
+int
 fork(void)
 {
   int i, pid;
@@ -321,6 +374,8 @@ fork(void)
   acquire(&np->lock);
   np->state = RUNNABLE;
   release(&np->lock);
+
+  np->bilhete = 1;
 
   return pid;
 }

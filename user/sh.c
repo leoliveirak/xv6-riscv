@@ -184,7 +184,7 @@ fork1(void)
 {
   int pid;
 
-  pid = fork();
+  pid = fork_com_bilhete(6);
   if(pid == -1)
     panic("fork");
   return pid;
