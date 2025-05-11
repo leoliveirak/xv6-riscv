@@ -454,10 +454,25 @@ scheduler(void)
     // processes are waiting.
     intr_on();
 
+    uint64 rand = random(); 
+    rand = rand % 12;
+    int bilhetes = 0;
+
+    if(rand <= 5){
+      bilhetes = 6; 
+    } else if(rand <= 9){
+      bilhetes = 3; 
+    } else if(rand <= 11){
+      bilhetes = 2; 
+    } else {
+      bilhetes = 1; 
+    }
+    
+
     int found = 0;
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
-      if(p->state == RUNNABLE) {
+      if(p->state == RUNNABLE && p->bilhetes == bilhetes) {
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
         // before jumping back to us.
