@@ -315,7 +315,7 @@ fork_com_bilhete(int bilhete)
 
   // Define o bilhete do processo filho.
   np->bilhete = bilhete;
-  printf("fork_com_bilhete: processo filho PID %d recebeu bilhete %d\n", pid, bilhete);
+  //printf("fork_com_bilhete: processo filho PID %d recebeu bilhete %d\n", pid, bilhete);
 
   release(&np->lock);
 
@@ -526,7 +526,7 @@ scheduler(void)
         // to release its lock and then reacquire it
         // before jumping back to us.
         p->state = RUNNING;
-        printf("rodando processo PID %d com bilhete %d\n", p->pid, p->bilhete);
+        //printf("rodando processo PID %d com bilhete %d\n", p->pid, p->bilhete);
         c->proc = p;
         swtch(&c->context, &p->context);
 
