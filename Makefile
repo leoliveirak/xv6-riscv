@@ -143,6 +143,7 @@ UPROGS=\
 	$U/_testuptime\
 	$U/_testrandom\
 	$U/_testlottery\
+	$U/_testebilhetes\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

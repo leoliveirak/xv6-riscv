@@ -124,6 +124,7 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
+  p->bilhete = 3;
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
@@ -508,15 +509,24 @@ scheduler(void)
     // turned off; enable them to avoid a deadlock if all
     // processes are waiting.
     intr_on();
+    uint64 r = random() % 12;
+    int bilhetes;
+    if ( r < 6) bilhetes = 6;
+    else if (r < 6 + 3) bilhetes = 3;
+    else if (r < 6 + 3 + 2) bilhetes = 2;
+    else bilhetes = 1;  
+
+    //printf("bilhete sorteado: %d\n", bilhetes);
 
     int found = 0;
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
-      if(p->state == RUNNABLE) {
+      if(p->state == RUNNABLE && p->bilhete == bilhetes) {
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
         // before jumping back to us.
         p->state = RUNNING;
+        printf("rodando processo PID %d com bilhete %d\n", p->pid, p->bilhete);
         c->proc = p;
         swtch(&c->context, &p->context);
 
