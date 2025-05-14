@@ -4,7 +4,7 @@
 #define N 4
 
 int child[N];
-int nbilhetes[] = {1, 2, 3, 4};
+int nbilhetes[] = {1, 2, 3, 6};
 void waste_time(){
   volatile unsigned long long i;
   printf("start\n");
