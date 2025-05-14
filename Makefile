@@ -145,6 +145,7 @@ UPROGS=\
 	$U/_testlottery\
 	$U/_testebilhetes\
 	$U/_prioritytest\
+	$U/_testeprofessor\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
     int pids[NUM_CLASSES];
     int iterations = 2000;
 
-    printf("Starting priority test with multiple processes using a loop...\n");
+    //printf("Starting priority test with multiple processes using a loop...\n");
 
     for (int i = 0; i < NUM_CLASSES; i++) {
         pids[i] = fork_com_bilhete(nbilhetes[i]); // Passa o índice da classe como prioridade
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
             printf("Created process %d (Priority Class %d, PID %d) with %d tickets\n",
                    i, i, pids[i], nbilhetes[i]);
         } else {
-            printf("Error forking process %d\n", i);
+            //printf("Error forking process %d\n", i);
         }
     }
 
