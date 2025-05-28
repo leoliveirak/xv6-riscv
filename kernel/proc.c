@@ -6,6 +6,8 @@
 #include "proc.h"
 #include "defs.h"
 
+#define STRIDE_CTE 10000
+
 struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];
