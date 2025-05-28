@@ -128,7 +128,7 @@ found:
   p->state = USED;
   p->bilhete = 100;
   p->pass = 0.0;
-  p->stride = STRIDE_CTE;
+  p->stride = STRIDE_CTE / p->bilhete;
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
