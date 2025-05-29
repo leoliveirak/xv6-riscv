@@ -513,34 +513,36 @@ scheduler(void)
     // turned off; enable them to avoid a deadlock if all
     // processes are waiting.
     intr_on();
-    uint64 r = random() % 12;
-    int bilhetes;
-    if ( r < 6) bilhetes = 6;
-    else if (r < 6 + 3) bilhetes = 3;
-    else if (r < 6 + 3 + 2) bilhetes = 2;
-    else bilhetes = 1;  
-
-    //printf("bilhete sorteado: %d\n", bilhetes);
+    struct proc *min_pass_proc = 0;
+    double min_pass_value = -1;
+    
 
     int found = 0;
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
-      if(p->state == RUNNABLE && p->bilhete == bilhetes) {
-        // Switch to chosen process.  It is the process's job
-        // to release its lock and then reacquire it
-        // before jumping back to us.
-        p->state = RUNNING;
-        //printf("rodando processo PID %d com bilhete %d\n", p->pid, p->bilhete);
-        c->proc = p;
-        swtch(&c->context, &p->context);
-
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-        found = 1;
+      if(p->state == RUNNABLE) {
+        if(min_pass_proc == 0 || p->pass < min_pass_value) {
+          min_pass_proc = p;
+          min_pass_value = p->pass;
+        } else if(p->pass == min_pass_value) {
+            // Desempate, adicionar outros critérios
+          if(p->bilhete < min_pass_proc->bilhete) {
+            min_pass_proc = p;
+            min_pass_value = p->pass;
+          }
+        }
       }
-      release(&p->lock);
     }
+    if (min_pass_proc){
+      p = min_pass_proc;
+      p->state = RUNNING;
+      c->proc = p;
+      p->pass += p->stride; // Increment the pass value
+      swtch(&c->context, &p->context);
+      c->proc = 0;
+      found = 1;
+    }
+    release(&p->lock);
     if(found == 0) {
       // nothing to run; stop running on this core until an interrupt.
       intr_on();
