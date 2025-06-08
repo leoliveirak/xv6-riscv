@@ -497,6 +497,7 @@ wait(uint64 addr)
 //  - swtch to start running that process.
 //  - eventually that process transfers control
 //    via swtch back to the scheduler.
+// Transformando o scheduler de round-robin para stride scheduler.
 void
 scheduler(void)
 {
@@ -505,40 +506,48 @@ scheduler(void)
 
   c->proc = 0;
   for(;;){
-    // The most recent process to run may have had interrupts
-    // turned off; enable them to avoid a deadlock if all
-    // processes are waiting.
     intr_on();
-    uint64 r = random() % 12;
-    int bilhetes;
-    if ( r < 6) bilhetes = 6;
-    else if (r < 6 + 3) bilhetes = 3;
-    else if (r < 6 + 3 + 2) bilhetes = 2;
-    else bilhetes = 1;  
-
-    //printf("bilhete sorteado: %d\n", bilhetes);
-
+    int menor_passo = -1;
+    int pid_escolhido = -1;
     int found = 0;
+
+    // 1. Encontrar o menor passos entre os RUNNABLE
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
-      if(p->state == RUNNABLE && p->bilhete == bilhetes) {
-        // Switch to chosen process.  It is the process's job
-        // to release its lock and then reacquire it
-        // before jumping back to us.
-        p->state = RUNNING;
-        //printf("rodando processo PID %d com bilhete %d\n", p->pid, p->bilhete);
-        c->proc = p;
-        swtch(&c->context, &p->context);
-
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-        found = 1;
+      if(p->state == RUNNABLE) {
+        if(menor_passo == -1 || p->passos < menor_passo) {
+          menor_passo = p->passos;
+          pid_escolhido = p->pid;
+        } else if(p->passos == menor_passo && p->pid < pid_escolhido) {
+          pid_escolhido = p->pid;
+        }
       }
       release(&p->lock);
     }
+
+    // 2. Incrementar os passos de todos os outros processos RUNNABLE (exceto o escolhido)
+    for(p = proc; p < &proc[NPROC]; p++) {
+      acquire(&p->lock);
+      if(p->state == RUNNABLE && p->pid != pid_escolhido) {
+        p->passos += p->bilhete;
+      }
+      release(&p->lock);
+    }
+
+    // 3. Executar o processo escolhido
+    for(p = proc; p < &proc[NPROC]; p++) {
+      acquire(&p->lock);
+      if(p->state == RUNNABLE && p->pid == pid_escolhido) {
+        p->state = RUNNING;
+        c->proc = p;
+        found = 1;
+        swtch(&c->context, &p->context);
+        c->proc = 0;
+      }
+      release(&p->lock);
+    }
+
     if(found == 0) {
-      // nothing to run; stop running on this core until an interrupt.
       intr_on();
       asm volatile("wfi");
     }
