@@ -499,7 +499,7 @@ wait(uint64 addr)
 //    via swtch back to the scheduler.
 // Transformando o scheduler de round-robin para stride scheduler.
 void
-scheduler(void)
+scheduler(void) // pode conferir?
 {
   struct proc *p;
   struct cpu *c = mycpu();
