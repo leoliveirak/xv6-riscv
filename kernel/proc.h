@@ -106,5 +106,5 @@ struct proc {
   char name[16];               // Process name (debugging)
   int bilhete;
   double stride;
-  double pass;
+  double passos;
 };
