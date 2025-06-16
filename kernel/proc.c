@@ -107,7 +107,7 @@ allocpid()
 // and return with p->lock held.
 // If there are no free procs, or a memory allocation fails, return 0.
 static struct proc*
-allocproc(void)
+allocproc()
 {
   struct proc *p;
 
@@ -285,7 +285,7 @@ fork_com_bilhete(int bilhete)
   struct proc *p = myproc();
 
   // Aloca processo.
-  if((np = allocproc()) == 0){
+  if((np = allocproc(bilhete)) == 0){
     return -1;
   }
 
@@ -525,14 +525,13 @@ scheduler(void) // pode conferir?
       release(&p->lock);
     }
 
-    // 2. Incrementar os passos de todos os outros processos RUNNABLE (exceto o escolhido)
-    for(p = proc; p < &proc[NPROC]; p++) {
+    // 2. Incrementar o passo do processo escolhido
       acquire(&p->lock);
-      if(p->state == RUNNABLE && p->pid != pid_escolhido) {
-        p->passos += p->bilhete;
+      if(p->state == RUNNABLE && p->pid == pid_escolhido) {
+        int passada = 10000 / p->bilhete; 
+        p->passos += passada;
       }
       release(&p->lock);
-    }
 
     // 3. Executar o processo escolhido
     for(p = proc; p < &proc[NPROC]; p++) {
