@@ -378,7 +378,7 @@ fork(void)
   np->state = RUNNABLE;
   release(&np->lock);
 
-  np->bilhete = 1;
+  np->bilhete = 100;
 
   return pid;
 }
@@ -509,45 +509,50 @@ scheduler(void) // pode conferir?
   c->proc = 0;
   for(;;){
     intr_on();
-    int menor_passo = -1;
-    int pid_escolhido = -1;
+    double menor_passada = -1;
+    struct proc *p_selecionado = 0; //ponteiro para o processo selecionado
     int found = 0;
 
     // 1. Encontrar o menor passos entre os RUNNABLE
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
       if(p->state == RUNNABLE) {
-        if(menor_passo == -1 || p->pass < menor_passo) {
-          menor_passo = p->pass;
-          pid_escolhido = p->pid;
-        } else if(p->pass == menor_passo && p->pid < pid_escolhido) {
-          pid_escolhido = p->pid;
+        if(p_selecionado == 0 || p->pass < menor_passada) {
+          if (p_selecionado != 0) {         //se já tínhamos um candidato anterior
+            release(&p_selecionado->lock);  // liberar o lock do processo anterior
+          }
+          p_selecionado = p;                // atualizar o candidato
+          menor_passada = p->pass;
+          found = 1;                        // encontramos pelo menos um RUNNABLE
+        } else if(p->pass == menor_passada) {
+            if(p->pid > p_selecionado->pid){
+              release(&p_selecionado->lock); // liberar o lock do processo anterior
+              p_selecionado = p;             // atualizar o candidato
+              menor_passada = p->pass;       // manter o menor passo
+              found = 1;                     // encontramos pelo menos um RUNNABLE
+            } else {
+              release(&p->lock);             // liberar o lock do processo atual
+            }
+        } else {
+          release(&p->lock); // liberar o lock do processo atual
         }
+      } else {
+        release(&p->lock); // liberar o lock do processo atual
       }
-      release(&p->lock);
     }
 
-    // 2. Incrementar o passo do processo escolhido
-      acquire(&p->lock);
-      if(p->state == RUNNABLE && p->pid == pid_escolhido) {
-        int passada = 10000 / p->bilhete; 
-        p->pass += passada;
-      }
-      release(&p->lock);
+    if (p_selecionado){
+      p = p_selecionado; // seleciona o processo com menor passada
+      p->state = RUNNING; // muda o estado do processo para RUNNING
+      c->proc = p; // atualiza o processo atual do CPU
 
-    // 3. Executar o processo escolhido
-    for(p = proc; p < &proc[NPROC]; p++) {
-      acquire(&p->lock);
-      if(p->state == RUNNABLE && p->pid == pid_escolhido) {
-        p->state = RUNNING;
-        c->proc = p;
-        found = 1;
-        swtch(&c->context, &p->context);
-        c->proc = 0;
-      }
-      release(&p->lock);
+      p->pass += p->stride; // incrementa o passo do processo selecionado
+      // Context switch to the selected process.
+      swtch(&c->context, &p->context);
+      // Process is done running for now.
+      c->proc = 0; // Clear the current process.
     }
-
+    
     if(found == 0) {
       intr_on();
       asm volatile("wfi");
