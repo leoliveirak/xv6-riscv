@@ -105,6 +105,7 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   int bilhete;
-  int passos;                  // Numero de passos dados pelo processo
+  double pass;                  // Numero de passos dados pelo processo
+  double stride;                // Valor do stride do processo
 
 };

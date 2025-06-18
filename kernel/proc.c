@@ -124,7 +124,9 @@ allocproc()
 found:
   p->pid = allocpid();
   p->state = USED;
-  p->bilhete = 3;
+  p->bilhete = 100;
+  p->pass = 0;
+  p->stride = 10000 / p->bilhete;
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
@@ -515,10 +517,10 @@ scheduler(void) // pode conferir?
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
       if(p->state == RUNNABLE) {
-        if(menor_passo == -1 || p->passos < menor_passo) {
-          menor_passo = p->passos;
+        if(menor_passo == -1 || p->pass < menor_passo) {
+          menor_passo = p->pass;
           pid_escolhido = p->pid;
-        } else if(p->passos == menor_passo && p->pid < pid_escolhido) {
+        } else if(p->pass == menor_passo && p->pid < pid_escolhido) {
           pid_escolhido = p->pid;
         }
       }
@@ -529,7 +531,7 @@ scheduler(void) // pode conferir?
       acquire(&p->lock);
       if(p->state == RUNNABLE && p->pid == pid_escolhido) {
         int passada = 10000 / p->bilhete; 
-        p->passos += passada;
+        p->pass += passada;
       }
       release(&p->lock);
 
