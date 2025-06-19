@@ -107,7 +107,7 @@ allocpid()
 // and return with p->lock held.
 // If there are no free procs, or a memory allocation fails, return 0.
 static struct proc*
-allocproc()
+allocproc(void)
 {
   struct proc *p;
 
@@ -124,9 +124,6 @@ allocproc()
 found:
   p->pid = allocpid();
   p->state = USED;
-  p->bilhete = 100;
-  p->pass = 0;
-  p->stride = 10000 / p->bilhete;
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
@@ -253,6 +250,9 @@ userinit(void)
   p->cwd = namei("/");
 
   p->state = RUNNABLE;
+  p->bilhete = 100; // Inicializa o bilhete do processo init
+  p->pass = 0; // Inicializa a passada do processo init
+  p->stride = 10000 / p->bilhete; // Inicializa o stride do processo init
 
   release(&p->lock);
 }
@@ -287,7 +287,7 @@ fork_com_bilhete(int bilhete)
   struct proc *p = myproc();
 
   // Aloca processo.
-  if((np = allocproc(bilhete)) == 0){
+  if((np = allocproc()) == 0){
     return -1;
   }
 
@@ -317,6 +317,8 @@ fork_com_bilhete(int bilhete)
 
   // Define o bilhete do processo filho.
   np->bilhete = bilhete;
+  np->pass = 0; // Inicializa a passada do processo filho
+  np->stride = 10000 / np->bilhete; // Inicializa o stride do processo filho
   //printf("fork_com_bilhete: processo filho PID %d recebeu bilhete %d\n", pid, bilhete);
 
   release(&np->lock);
@@ -379,6 +381,8 @@ fork(void)
   release(&np->lock);
 
   np->bilhete = 100;
+  np->pass = 0; // Inicializa a passada do processo filho
+  np->stride = 10000 / np->bilhete; // Inicializa o stride do processo filho
 
   return pid;
 }
@@ -509,35 +513,24 @@ scheduler(void) // pode conferir?
   c->proc = 0;
   for(;;){
     intr_on();
-    double menor_passada = -1;
     struct proc *p_selecionado = 0; //ponteiro para o processo selecionado
-    int found = 0;
 
     // 1. Encontrar o menor passos entre os RUNNABLE
     for(p = proc; p < &proc[NPROC]; p++) {
+      if(holding(&p->lock)) {
+        continue;
+      }
       acquire(&p->lock);
       if(p->state == RUNNABLE) {
-        if(p_selecionado == 0 || p->pass < menor_passada) {
-          if (p_selecionado != 0) {         //se já tínhamos um candidato anterior
+        if(p_selecionado == 0 || p->pass < p_selecionado->pass) {
+          if (p_selecionado)                //se já tínhamos um candidato anterior
             release(&p_selecionado->lock);  // liberar o lock do processo anterior
-          }
-          p_selecionado = p;                // atualizar o candidato
-          menor_passada = p->pass;
-          found = 1;                        // encontramos pelo menos um RUNNABLE
-        } else if(p->pass == menor_passada) {
-            if(p->pid > p_selecionado->pid){
-              release(&p_selecionado->lock); // liberar o lock do processo anterior
-              p_selecionado = p;             // atualizar o candidato
-              menor_passada = p->pass;       // manter o menor passo
-              found = 1;                     // encontramos pelo menos um RUNNABLE
-            } else {
-              release(&p->lock);             // liberar o lock do processo atual
-            }
+          p_selecionado = p;                // atualizar o candidato                       
         } else {
-          release(&p->lock); // liberar o lock do processo atual
-        }
+              release(&p->lock); // liberar o lock do processo anterior
+          } 
       } else {
-        release(&p->lock); // liberar o lock do processo atual
+        release(&p->lock); // liberar o lock do processo que não é RUNNABLE
       }
     }
 
@@ -551,11 +544,10 @@ scheduler(void) // pode conferir?
       swtch(&c->context, &p->context);
       // Process is done running for now.
       c->proc = 0; // Clear the current process.
-    }
-    
-    if(found == 0) {
-      intr_on();
-      asm volatile("wfi");
+      release(&p->lock); // Release the lock on the selected process.
+    } else {
+        intr_on();
+        asm volatile("wfi");
     }
   }
 }
