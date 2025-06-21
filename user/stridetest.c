@@ -1,7 +1,6 @@
 #include "kernel/types.h"
 #include "user/user.h"
 
-// ALTERAÇÃO 1: A função de trabalho agora é finita
 // Simula uma carga de trabalho fixa para que possamos ver quem termina primeiro.
 void fazer_trabalho(const char *name) {
     volatile long i;
@@ -30,7 +29,6 @@ main(int argc, char *argv[])
     for (int i = 0; i < 3; i++) {
         pids[i] = fork_com_bilhete(tickets[i]);
         if (pids[i] == 0) { // Processo filho
-            // ALTERAÇÃO 2: Lógica do filho
             fprintf(1, "Filho %s (PID %d) iniciado com %d bilhetes.\n", names[i], getpid(), tickets[i]);
             
             fazer_trabalho(names[i]); // Executa a carga de trabalho finita
@@ -45,7 +43,6 @@ main(int argc, char *argv[])
         }
     }
 
-    // ALTERAÇÃO 3: Lógica do pai
     // O pai agora espera que todos os 3 filhos terminem.
     fprintf(1, "\nPai esperando todos os filhos terminarem...\n");
     for (int i = 0; i < 3; i++) {
